@@ -304,12 +304,13 @@ export default class CompetitionDetailIndex extends Base {
   }
 
   async participantDetail(index){
+    var competition = this.state.data_competition
     var participant = this.state.participant_arr
     this.props.navigation.navigate('FormRegister', {
       id : participant[index].id,
       type : participant[index].type,
       registration_status : participant[index].status_registration,
-      competition_data : JSON.stringify({id : this.state.data_competition.id, name : this.state.data_competition.name}),
+      competition_id : competition.id,
       onData : ()=>this.onGetParticipant()
     })
   }
@@ -322,10 +323,11 @@ export default class CompetitionDetailIndex extends Base {
   }
 
   async addParticipant(type){
+    var competition = this.state.data_competition
     this.props.navigation.navigate('FormRegister', {
       type : type,
       registration_status : 'waiting',
-      competition_data : JSON.stringify({id : this.state.data_competition.id, name : this.state.data_competition.name}),
+      competition_id : competition.id,
       onData : ()=>this.onGetParticipant()
     })
   }

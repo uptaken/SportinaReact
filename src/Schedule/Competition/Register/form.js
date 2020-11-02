@@ -80,14 +80,17 @@ export default class FormRegister extends Base {
         class_arr : [],
         is_datepicker : false,
         unit_arr : [],
+        competition_id : '',
     }
 
 	async componentDidMount() {
         var token = await AsyncStorage.getItem('token')
         var optionsAxios = this.state.optionsAxios
         optionsAxios.headers['Authorization'] = token
-        var competition_data = JSON.parse(this.props.route.params.competition_data)
-        await this.setState({token : token, optionsAxios : optionsAxios, competition_data : competition_data})
+        var competition_id = this.props.route.params.competition_id
+        await this.setState({token : token, optionsAxios : optionsAxios, competition_id : competition_id})
+
+        await this.get_competition_data()
 
         if(this.props.route.params.type === 'coach'){
             await this.get_coach_position()
@@ -101,6 +104,23 @@ export default class FormRegister extends Base {
 
         if(this.props.route.params.id != null){
             await this.get_data()
+        }
+    }
+
+    async get_competition_data(){
+        try {
+          var url = this.url + '/competition?id=' + this.state.competition_id
+
+          var response = await this.axios.get(url, this.state.optionsAxios);
+
+          if (response.data.status == 'success') {
+            var data = response.data.data
+
+            await this.setState({competition_data : data})
+          }
+
+        } catch (e) {
+          this.alertSnackbar(e.message)
         }
     }
 
@@ -620,7 +640,7 @@ class FormCoach extends Base {
                             <Picker
                                 selectedValue={coach_data.gender}
                                 onValueChange={(itemValue, itemIndex) =>
-                                    ChangeInput(JSON.parse(itemValue), 'gender')
+                                    ChangeInput(itemValue, 'gender')
                                 }>
                                 <Picker.Item label={'Pilih Gender'} value={''} />
                                 <Picker.Item label={'Male'} value={1} />
@@ -747,7 +767,7 @@ class FormAthlete extends Base {
                         <Picker
                             selectedValue={athlete_data.gender}
                             onValueChange={(itemValue, itemIndex) =>
-                                ChangeInput(JSON.parse(itemValue), 'gender')
+                                ChangeInput(itemValue, 'gender')
                             }>
                             <Picker.Item label={'Pilih Gender'} value={''} />
                             <Picker.Item label={'Male'} value={1} />
