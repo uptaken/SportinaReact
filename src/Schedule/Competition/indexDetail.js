@@ -230,17 +230,18 @@ export default class CompetitionDetailIndex extends Base {
             data[x].image_display = this.no_profile_picture
             data[x].status_registration = 'registered'
             data[x].registration_type = 'registered'
+            data[x].participant_type = 'athlete_coach'
 
             var uri_image = this.url_image
             
             if(type === 'waiting'){
               data[x].status_registration = 'waiting'
               data[x].registration_type = 'waiting'
+              data[x].participant_type = 'team_participant'
               data[x].type = data[x].type
               uri_image += '/team-participant?file_name=' + data[x].file_name + '&random=' + new Date().getTime()
             }
             else{
-              console.log(data[x])
               if(data[x].invoice_registration.invoice_status.name === 'Unpaid'){
                 data[x].status_registration = 'waiting'
               }
@@ -332,7 +333,7 @@ export default class CompetitionDetailIndex extends Base {
       type : participant[index].type,
       registration_status : participant[index].status_registration,
       competition_id : competition.id,
-      registration_type : participant[index].registration_type,
+      participant_type : participant[index].participant_type,
       onData : ()=>this.onGetParticipant()
     })
   }
@@ -356,14 +357,14 @@ export default class CompetitionDetailIndex extends Base {
       type : type,
       registration_status : 'waiting',
       competition_id : competition.id,
-      registration_type : 'waiting',
+      participant_type : 'team_participant',
       onData : ()=>this.onGetParticipant()
     })
   }
 
   async get_priceInv(){
     var competition = this.state.data_competition
-    try {            
+    try {
       var response = await this.axios.get(this.url + '/invoice?competition_id=' + competition.id, this.state.optionsAxios);
 
       if(response.data.status === 'success'){
@@ -376,7 +377,7 @@ export default class CompetitionDetailIndex extends Base {
           var participant = this.state.participant_arr
           var countAthleteNew = 0
           for(var x in participant){
-            if(participant[x].status_registration === 'waiting'){
+            if(participant[x].participant_type === 'team_participant'){
               if(participant[x].type === 'athlete'){
                 countAthleteNew += 1
               }

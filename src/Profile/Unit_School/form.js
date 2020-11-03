@@ -10,7 +10,8 @@ import {
 	TouchableNativeFeedback,
 	TouchableHighlight,
 	Button,
-	AsyncStorage
+	AsyncStorage,
+	Picker
 } from 'react-native';
 
 import Base from '../../Base';
@@ -19,7 +20,7 @@ import ProfileHead from '../../Components/HeadTitle'
 
 import ModalLoading from '../../Components/ModalLoading'
 
-import {Picker} from '@react-native-community/picker';
+// import {Picker} from '@react-native-community/picker';
 import Icon from 'react-native-vector-icons/MaterialIcons'
 
 export default class FormUnitSchool extends Base {
@@ -73,6 +74,9 @@ export default class FormUnitSchool extends Base {
 		
 			if (response.data.status == 'success') {
 				var data = response.data.data
+
+				console.log(data.city.province.country.id, 'country')
+				console.log(data.city.province.id, 'prov')
 
 				await this.get_place('province', data.city.province.country.id)
 				await this.get_place('city', data.city.province.id)

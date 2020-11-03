@@ -9,7 +9,8 @@ import {
 	TouchableOpacity,
 	TouchableNativeFeedback,
     FlatList,
-    AsyncStorage
+    AsyncStorage,
+    Picker
 } from 'react-native';
 
 import Base from '../Base';
@@ -18,7 +19,7 @@ import Button from '../Components/Button'
 
 import Icon from 'react-native-vector-icons/MaterialIcons'
 import FAIcon from 'react-native-vector-icons/FontAwesome'
-import {Picker} from '@react-native-community/picker'
+// import {Picker} from '@react-native-community/picker'
 import ImagePicker from 'react-native-image-picker'
 
 import SearchCompetition from '../Components/SearchCompetition'

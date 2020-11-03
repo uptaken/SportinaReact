@@ -1,19 +1,20 @@
 import React from 'react';
 import {
-	KeyboardAvoidingView,
-	ScrollView,
-	Text,
-	View,
-	Image,
-	TextInput,
-	TouchableOpacity,
+    KeyboardAvoidingView,
+    ScrollView,
+    Text,
+    View,
+    Image,
+    TextInput,
+    TouchableOpacity,
     TouchableNativeFeedback,
     TouchableHighlight,
     FlatList,
     Keyboard,
     AsyncStorage,
     Modal,
-    Alert
+    Alert,
+    Picker
 } from 'react-native';
 
 import Base from '../../../Base';
@@ -23,15 +24,16 @@ import Button from '../../../Components/Button'
 import ImagePicker from 'react-native-image-picker'
 import Icon from 'react-native-vector-icons/MaterialIcons'
 import FAIcon from 'react-native-vector-icons/FontAwesome'
-import {Picker} from '@react-native-community/picker';
+// import {Picker} from '@react-native-community/picker';
 
 import SearchCompetition from '../../../Components/SearchCompetition'
 import HeadTitle from '../../../Components/HeadTitle'
+import ModalLoading from '../../../Components/ModalLoading'
 
 import DateTimePicker from '@react-native-community/datetimepicker'
 
 export default class FormRegister extends Base {
-	state = {
+    state = {
         token : '',
         optionsAxios : {
             timeout: this.axiosTimeout,
@@ -86,22 +88,20 @@ export default class FormRegister extends Base {
         is_modal_loading : false,
     }
 
-	async componentDidMount() {
+    async componentDidMount() {
         var token = await AsyncStorage.getItem('token')
         var optionsAxios = this.state.optionsAxios
         optionsAxios.headers['Authorization'] = token
         var competition_id = this.props.route.params.competition_id
-        await this.setState({token : token, optionsAxios : optionsAxios, competition_id : competition_id})
+        await this.setState({token : token, optionsAxios : optionsAxios, competition_id : competition_id, division_arr : []})
+
+        await this.setState({is_modal_loading : true})
         
         await this.get_competition_data()
 
         await this.get_grade(this.props.route.params.type)
         await this.get_grade('both')
-        
-        if(this.props.route.params.id != null){
-            await this.get_data()
-        }
-        
+                
 
         if(this.props.route.params.type === 'coach'){
             await this.get_coach_position()
@@ -110,6 +110,14 @@ export default class FormRegister extends Base {
             await this.get_unit()
             await this.get_classDivision('division', '', '')
         }
+
+        if(this.props.route.params.id != null){
+            await this.get_data()
+        }
+
+        setTimeout(async () => {
+            await this.setState({is_modal_loading : false})
+        },this.loadingTimeout);
     }
 
     async get_competition_data(){
@@ -131,9 +139,9 @@ export default class FormRegister extends Base {
 
     async get_unit(){
         try {
-			var response = await this.axios.get(this.url + '/unit', this.state.optionsAxios);
-		
-			if (response.data.status == 'success') {
+            var response = await this.axios.get(this.url + '/unit', this.state.optionsAxios);
+        
+            if (response.data.status == 'success') {
                 var data = response.data.data.data
                 var arr = []
                 for(var x in data){
@@ -143,18 +151,18 @@ export default class FormRegister extends Base {
                     arr.push(unit)
                 }
                 await this.setState({unit_arr : arr})
-			}
+            }
 
-		} catch (e) {
-			this.alertSnackbar(e.message)
-		}
+        } catch (e) {
+            this.alertSnackbar(e.message)
+        }
     }
 
     async get_coach_position(){
         try {
-			var response = await this.axios.get(this.url + '/coach-position', this.state.optionsAxios);
-		
-			if (response.data.status == 'success') {
+            var response = await this.axios.get(this.url + '/coach-position', this.state.optionsAxios);
+        
+            if (response.data.status == 'success') {
                 var data = response.data.data.data
                 var coach_position_arr = []
                 for(var x in data){
@@ -164,30 +172,33 @@ export default class FormRegister extends Base {
                     coach_position_arr.push(arr)
                 }
                 await this.setState({coach_position_arr : coach_position_arr})
-			}
+            }
 
-		} catch (e) {
-			this.alertSnackbar(e.message)
-		}
+        } catch (e) {
+            this.alertSnackbar(e.message)
+        }
     }
 
     async get_grade(type){
         try {
-            console.log(this.url + '/grade-competition?competition_id=' + this.state.competition_data.id + '&type=' + type)
-			var response = await this.axios.get(this.url + '/grade-competition?competition_id=' + this.state.competition_data.id + '&type=' + type, this.state.optionsAxios);
-		
-			if (response.data.status == 'success') {
+            // console.log(this.url + '/grade-competition?competition_id=' + this.state.competition_data.id + '&type=' + type)
+            var response = await this.axios.get(this.url + '/grade-competition?competition_id=' + this.state.competition_data.id + '&type=' + type, this.state.optionsAxios);
+        
+            if (response.data.status == 'success') {
                 var grade = this.state.grade_arr
                 var data = response.data.data.data
                 for(var x in data){
-                    grade.push(data[x])
+                    var grade_data = {}
+                    grade_data.id = data[x].id
+                    grade_data.grade = data[x].grade
+                    grade.push(grade_data)
                 }
                 await this.setState({grade_arr : grade})
-			}
+            }
 
-		} catch (e) {
-			this.alertSnackbar(e.message)
-		}
+        } catch (e) {
+            this.alertSnackbar(e.message)
+        }
     }
 
     async get_classDivision(type, id, gender){
@@ -200,9 +211,9 @@ export default class FormRegister extends Base {
         }
 
         try {
-			var response = await this.axios.get(url, this.state.optionsAxios);
-		
-			if (response.data.status == 'success') {
+            var response = await this.axios.get(url, this.state.optionsAxios);
+        
+            if (response.data.status == 'success') {
                 var data = response.data.data.data
                 if(type === 'division'){
                     var arr = []
@@ -228,33 +239,36 @@ export default class FormRegister extends Base {
                     }
                     await this.setState({class_arr : arr})
                 }
-			}
+            }
 
-		} catch (e) {
-			this.alertSnackbar(e.message)
-		}
+        } catch (e) {
+            this.alertSnackbar(e.message)
+        }
     }
     
     async get_data(){
-        await this.setState({is_modal_loading : true})
+        
         try {
             var url = this.url
-            if(this.props.route.params.registration_type === 'waiting'){
+            if(this.props.route.params.participant_type === 'team_participant'){
                 url += '/team/participant?id=' + this.props.route.params.id
             }
             else{
                 url += '/' + this.props.route.params.type + '?id=' + this.props.route.params.id + '&type=no_team'
             }
+            console.log(url)
 
-			var response = await this.axios.get(url, this.state.optionsAxios);
-		
-			if (response.data.status == 'success') {
+            var response = await this.axios.get(url, this.state.optionsAxios);
+        
+            if (response.data.status == 'success') {
                 var data = response.data.data
-                console.log(data.id)
                 if(data.unit != null){
                     data.unit = {id : data.unit.id, name : data.unit.name}
                 }
-                data.registration_status = this.props.route.params.registration_type
+                else{
+                    data.unit = {id : ''}
+                }
+                data.registration_status = this.props.route.params.participant_type
                 data.image = {
                     image : '',
                     image_display : this.no_profile_picture,
@@ -262,7 +276,7 @@ export default class FormRegister extends Base {
                     type : 'old'
                 }
                 var image_url = this.props.route.params.type
-                if(this.props.route.params.registration_type === 'waiting'){
+                if(this.props.route.params.participant_type === 'team_participant'){
                     image_url = 'team-participant'
                 }
                 if(data.file_name != null){
@@ -275,13 +289,14 @@ export default class FormRegister extends Base {
                 }
                 if(this.props.route.params.type === 'coach'){
                     data.coach_position = {id : data.coach_position.id, name : data.coach_position.name}
+                    data.grade = {id : data.grade.id, grade : data.grade.grade}
                     await this.setState({coach_data : data})
                 }
                 else if(this.props.route.params.type === 'athlete'){
                     await this.setState({class_arr : []})
+                    data.grade = {id : data.grade.id, grade : data.grade.grade}
                     data.division = {id : data.class.division.id, name : data.class.division.name}
                     await this.get_classDivision('class', data.division.id, data.gender)
-
 
                     data.class = {id : data.class.id, name : data.class.name}
                     data.birth_date = this.moment(data.birth_date).format('DD MMMM YYYY')
@@ -291,15 +306,11 @@ export default class FormRegister extends Base {
                         await this.setState({athlete_data : data})
                     },this.loadingTimeout);
                 }
+            }
 
-                setTimeout(async () => {
-                    await this.setState({is_modal_loading : false})
-                },this.loadingTimeout);
-			}
-
-		} catch (e) {
-			this.alertSnackbar(e.message)
-		}
+        } catch (e) {
+            this.alertSnackbar(e.message)
+        }
     }
 
     async chooseImage(){
@@ -333,16 +344,16 @@ export default class FormRegister extends Base {
         });
     }
 
-	async ChangeInput(value, type, formType){
+    async ChangeInput(value, type, formType){
         if(formType === 'coach'){
             var data = this.state.coach_data
             data[type] = value
-            if(type === 'coach_position'){
-                data[type] = {id : value}
-            }
-            else if(type === 'grade'){
-                data[type] = {id : value}
-            }
+            // if(type === 'coach_position'){
+            //     data[type] = {id : value}
+            // }
+            // else if(type === 'grade'){
+            //     data[type] = {id : value}
+            // }
             await this.setState({coach_data : data})
         }
         if(formType === 'athlete'){
@@ -354,11 +365,11 @@ export default class FormRegister extends Base {
                 await this.datePickerAction()
             }
             else if(type === 'division'){
-                data[type] = {id : value}
+                // data[type] = {id : value}
                 await this.setState({class_arr : []})
                 data['class'] = {id : ''}
                 if(value !== ''){
-                    await this.get_classDivision('class', value, data.gender)
+                    await this.get_classDivision('class', value.id, data.gender)
                 }
             }
             else if(type === 'gender'){
@@ -370,15 +381,15 @@ export default class FormRegister extends Base {
                 }
                 data['class'] = {id : ''}
             }
-            else if(type === 'unit'){
-                data[type] = {id : value}
-            }
-            else if(type === 'grade'){
-                data[type] = {id : value}
-            }
-            else if(type === 'class'){
-                data[type] = {id : value}
-            }
+            // else if(type === 'unit'){
+            //     // data[type] = {id : value}
+            // }
+            // else if(type === 'grade'){
+            //     // data[type] = {id : value}
+            // }
+            // else if(type === 'class'){
+            //     // data[type] = {id : value}
+            // }
             await this.setState({athlete_data : data})
         }
     }
@@ -424,7 +435,7 @@ export default class FormRegister extends Base {
                     }
                     var dataPost = {}
 
-                    if(data.registration_status !== 'waiting'){
+                    if(this.props.route.params.participant_type !== 'team_participant'){
                         url += '/coach'
                         dataPost = dataClone
                     }
@@ -453,6 +464,7 @@ export default class FormRegister extends Base {
                     }
                 }
                 catch (e) {
+                    await this.setState({is_modal_loading : false})
                     await this.alertSnackbar(e.message)
                 }
             }
@@ -498,7 +510,7 @@ export default class FormRegister extends Base {
                     }
                     var dataPost = {}
 
-                    if(data.registration_status !== 'waiting'){
+                    if(this.props.route.params.participant_type !== 'team_participant'){
                         url += '/athlete'
                         dataPost = dataClone
                     }
@@ -531,6 +543,7 @@ export default class FormRegister extends Base {
 
                 }
                 catch (e) {
+                    // await this.setState({is_modal_loading : false})
                     await this.alertSnackbar(e.message)
                 }
             }
@@ -556,7 +569,7 @@ export default class FormRegister extends Base {
         }
     }
 
-	render() {
+    render() {
         const {
             competition_data,
             coach_data,
@@ -569,7 +582,7 @@ export default class FormRegister extends Base {
             unit_arr,
             is_modal_loading
         } = this.state
-		return (
+        return (
             <>
             <HeadTitle title={competition_data.name} subTitle={this.props.route.params.type + ' Registration'} />
             <ScrollView style={{backgroundColor : Style.colors.bgBase}}>
@@ -630,22 +643,11 @@ export default class FormRegister extends Base {
                 
             </ScrollView>
 
-            <Modal
-                transparent={true}
-                visible={is_modal_loading}
-                animationType="fade">
-                <View style={{backgroundColor : '#000000B3', flex : 1, justifyContent : 'center'}}>
-                    <View style={{margin : 16 * 1.5, backgroundColor : 'white', radius : 4, padding : 16}}>
-                        <View>
-                            <Text style={{fontWeight : 'bold', fontSize : 16}}>Harap Tunggu...</Text>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
+            <ModalLoading is_modal_loading={is_modal_loading} />
 
             </>
         );
-	}
+    }
 }
 
 class FormCoach extends Base {
@@ -664,14 +666,14 @@ class FormCoach extends Base {
                     <Text>Position</Text>
                         <View style={{backgroundColor : 'white', borderRadius : 4, marginTop : 4}}>
                             <Picker
-                                selectedValue={coach_data.coach_position.id}
+                                selectedValue={JSON.stringify(coach_data.coach_position)}
                                 onValueChange={(itemValue, itemIndex) =>
-                                    ChangeInput(itemValue, 'coach_position')
+                                    ChangeInput(JSON.parse(itemValue), 'coach_position')
                                 }>
-                                <Picker.Item label={'Pilih Posisi'} value={''} />
+                                <Picker.Item label={'Pilih Posisi'} value={JSON.stringify({id : ''})} />
                                 {
                                     coach_position_arr.map((data, index)=>(
-                                    <Picker.Item label={data.name} value={data.id} key={index} />
+                                    <Picker.Item label={data.name} value={JSON.stringify(data)} key={index} />
                                     ))
                                 }
                             </Picker>
@@ -720,14 +722,14 @@ class FormCoach extends Base {
                     <Text>Grade</Text>
                         <View style={{backgroundColor : 'white', borderRadius : 4, marginTop : 4}}>
                             <Picker
-                                selectedValue={coach_data.grade.id}
+                                selectedValue={JSON.stringify(coach_data.grade)}
                                 onValueChange={(itemValue, itemIndex) =>
-                                    ChangeInput(itemValue, 'grade')
+                                    ChangeInput(JSON.parse(itemValue), 'grade')
                                 }>
-                                <Picker.Item label={'Pilih Grade'} value={''} />
+                                <Picker.Item label={'Pilih Grade'} value={JSON.stringify({id : ''})} />
                                 {
                                     grade_arr.map((data, index)=>(
-                                    <Picker.Item label={data.grade} value={data.id} key={index} />
+                                    <Picker.Item label={data.grade} value={JSON.stringify(data)} key={index} />
                                     ))
                                 }
                             </Picker>
@@ -762,14 +764,14 @@ class FormAthlete extends Base {
                     <Text>Unit / School</Text>
                         <View style={{backgroundColor : 'white', borderRadius : 4, marginTop : 4}}>
                             <Picker
-                                selectedValue={athlete_data.unit.id}
+                                selectedValue={JSON.stringify(athlete_data.unit)}
                                 onValueChange={(itemValue, itemIndex) =>
-                                    ChangeInput(itemValue, 'unit')
+                                    ChangeInput(JSON.parse(itemValue), 'unit')
                                 }>
-                                <Picker.Item label={'Pilih Unit / School'} value={''} />
+                                <Picker.Item label={'Pilih Unit / School'} value={JSON.stringify({id : ''})} />
                                 {
                                     unit_arr.map((data, index)=>(
-                                    <Picker.Item label={data.name} value={data.id} key={index} />
+                                    <Picker.Item label={data.name} value={JSON.stringify(data)} key={index} />
                                     ))
                                 }
                             </Picker>
@@ -847,14 +849,14 @@ class FormAthlete extends Base {
                     <Text>Grade</Text>
                     <View style={{backgroundColor : 'white', borderRadius : 4, marginTop : 4}}>
                         <Picker
-                            selectedValue={athlete_data.grade.id}
+                            selectedValue={JSON.stringify(athlete_data.grade)}
                             onValueChange={(itemValue, itemIndex) =>
-                                ChangeInput(itemValue, 'grade')
+                                ChangeInput(JSON.parse(itemValue), 'grade')
                             }>
-                            <Picker.Item label={'Pilih Grade'} value={''} />
+                            <Picker.Item label={'Pilih Grade'} value={JSON.stringify({id : ''})} />
                             {
                                 grade_arr.map((data, index)=>(
-                                <Picker.Item label={data.grade} value={data.id} key={index} />
+                                <Picker.Item label={data.grade} value={JSON.stringify(data)} key={index} />
                                 ))
                             }
                         </Picker>
@@ -900,14 +902,14 @@ class FormAthlete extends Base {
                     <Text>Division</Text>
                     <View style={{backgroundColor : 'white', borderRadius : 4, marginTop : 4}}>
                         <Picker
-                            selectedValue={athlete_data.division.id}
+                            selectedValue={JSON.stringify(athlete_data.division)}
                             onValueChange={(itemValue, itemIndex) =>
-                                ChangeInput(itemValue, 'division')
+                                ChangeInput(JSON.parse(itemValue), 'division')
                             }>
-                            <Picker.Item label={'Pilih Divisi'} value={''} />
+                            <Picker.Item label={'Pilih Division'} value={JSON.stringify({id : ''})} />
                             {
                                 division_arr.map((data, index)=>(
-                                <Picker.Item label={data.name} value={data.id} key={index} />
+                                <Picker.Item label={data.name} value={JSON.stringify(data)} key={index} />
                                 ))
                             }
                         </Picker>
@@ -917,14 +919,14 @@ class FormAthlete extends Base {
                     <Text>Class</Text>
                     <View style={{backgroundColor : 'white', borderRadius : 4, marginTop : 4}}>
                         <Picker
-                            selectedValue={athlete_data.class.id}
+                            selectedValue={JSON.stringify(athlete_data.class)}
                             onValueChange={(itemValue, itemIndex) =>
-                                ChangeInput(itemValue, 'class')
+                                ChangeInput(JSON.parse(itemValue), 'class')
                             }>
-                            <Picker.Item label={'Pilih Class'} value={''} />
+                            <Picker.Item label={'Pilih Class'} value={JSON.stringify({id : ''})} />
                             {
                                 class_arr.map((data, index)=>(
-                                <Picker.Item label={data.name} value={data.id} key={index} />
+                                <Picker.Item label={data.name} value={JSON.stringify(data)} key={index} />
                                 ))
                             }
                         </Picker>

@@ -8,7 +8,8 @@ import {
 	TextInput,
     TouchableOpacity,
     TouchableHighlight,
-    AsyncStorage
+    AsyncStorage,
+    Picker
 } from 'react-native';
 
 import Base from '../../Base';
@@ -17,7 +18,7 @@ import ProfileHead from '../../Components/HeadTitle'
 
 import Button from '../../Components/Button'
 
-import {Picker} from '@react-native-community/picker';
+// import {Picker} from '@react-native-community/picker';
 import Icon from 'react-native-vector-icons/MaterialIcons'
 import ImagePicker from 'react-native-image-picker';
 

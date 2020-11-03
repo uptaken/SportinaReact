@@ -8,13 +8,14 @@ import {
 	TextInput,
 	TouchableOpacity,
     AsyncStorage,
+    Picker,
 } from 'react-native';
 
 import Base from '../Base';
 import Style from '../Style/theme'
 
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import {Picker} from '@react-native-community/picker';
+// import {Picker} from '@react-native-community/picker';
 
 import Button from '../Components/Button'
 import InputPassword from '../Components/inputPassword'
