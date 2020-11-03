@@ -25,7 +25,7 @@ export default class ChangePassword extends Base {
 	state = {
         token : '',
         optionsAxios : {
-			timeout: 30000,
+			timeout: this.axiosTimeout,
 			headers: {
 				'Content-Type': 'application/json',
 			},

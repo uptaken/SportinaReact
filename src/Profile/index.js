@@ -23,7 +23,7 @@ export default class Profile extends Base {
 	state = {
 		token : '',
 		optionsAxios : {
-			timeout: 30000,
+			timeout: this.axiosTimeout,
 			headers: {
 				'Content-Type': 'application/json',
 			},
@@ -82,7 +82,7 @@ export default class Profile extends Base {
 	async menuSelected(index){
 		this.props.navigation.navigate(
 			this.state.profile_menu[index].nav,
-			{onData : () => this.onGetData()}
+			{onData : () => this.onGetData(), id : ''}
 		)
 	}
 

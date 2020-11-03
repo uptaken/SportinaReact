@@ -10,7 +10,8 @@ import {
 	Button,
     FlatList,
     AsyncStorage,
-    Linking
+    Linking,
+    TouchableHighlight
 } from 'react-native';
 
 import Base from '../../Base';
@@ -28,7 +29,7 @@ export default class DetailCompetition extends Base {
 	state = {
         token : '',
 		optionsAxios : {
-			timeout: 30000,
+			timeout: this.axiosTimeout,
 			headers: {
 				'Content-Type': 'application/json',
 			},
@@ -56,7 +57,8 @@ export default class DetailCompetition extends Base {
             total_data,
             downloadProposal,
             survey_arr,
-            division_regis_arr
+            division_regis_arr,
+            divisionClassDetail
         } = this.props
 		return (
             <ScrollView>
@@ -120,7 +122,8 @@ export default class DetailCompetition extends Base {
                                             <View style={{flexDirection : 'row'}} key={index1}>
                                                 {
                                                     class_arr.map((data_class, index2)=>(
-                                                    <View style={{flex : 1/4, borderColor : Style.colors.gray_ea, borderWidth : 1}} key={index2}>
+                                                    <TouchableHighlight style={{flex : 1/4}} onPress={()=>this.props.divisionClassDetail(index, index1, index2)} underlayColor={'transparent'} key={index2}>
+                                                    <View style={{borderColor : Style.colors.gray_ea, borderWidth : 1}} key={index2}>
                                                         <View style={{flexDirection : 'row'}}>
                                                             <View style={{padding : 4, justifyContent : 'center', backgroundColor : (data_class.gender === 1 ? Style.colors.genderMale : Style.colors.genderFemale)}}>
                                                                 <FAIcon name={(data_class.gender === 1 ? 'mars' : 'venus')} size={14} />
@@ -142,6 +145,7 @@ export default class DetailCompetition extends Base {
                                                             </View>
                                                         </View>
                                                     </View>
+                                                    </TouchableHighlight>
                                                     )) 
                                                 }
                                             </View>

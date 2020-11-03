@@ -21,7 +21,7 @@ export default class ForgetPassword extends Base {
 	state = {
 		email : '',
 		optionsAxios : {
-            timeout: 30000,
+            timeout: this.axiosTimeout,
             headers: {
                 'Content-Type': 'application/json',
             },

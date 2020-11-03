@@ -28,7 +28,7 @@ export default class Topup extends Base {
 	state = {
         token : '',
         optionsAxios : {
-            timeout: 30000,
+            timeout: this.axiosTimeout,
             headers: {
             'Content-Type': 'application/json',
             },
@@ -36,7 +36,7 @@ export default class Topup extends Base {
         competition_data : {id : '', name : ''},
         payment_info : [],
         bank_arr : [],
-        payment_data : {bank_setting : {id : ''}, account_number : '', amount : 0, image : {image : ''}},
+        payment_data : {bank : {id : ''}, account_number : '', amount : 0, image : {image : ''}},
         is_disabled : false,
     }
 
@@ -47,17 +47,38 @@ export default class Topup extends Base {
         optionsAxios.headers['Authorization'] = token
         await this.setState({token : token, optionsAxios : optionsAxios, competition_data : competition_data})
 
+        await this.get_bank_setting()
         await this.get_bank()
     }
-    
+
     async get_bank(){
+        try {            
+            var response = await this.axios.get(this.url + '/bank', this.state.optionsAxios);
+      
+            if(response.data.status === 'success'){
+                var data = response.data.data.data
+                await this.setState({bank_arr : data})
+            }
+      
+        } 
+        catch (e) {
+            await this.alertSnackbar(e.message)
+        }
+    }
+    
+    async get_bank_setting(){
         try {            
             var response = await this.axios.get(this.url + '/bank-setting', this.state.optionsAxios);
       
             if(response.data.status === 'success'){
                 var data = response.data.data.data
-                
-                await this.setState({bank_arr : data})
+
+                var payment_info = [
+                    {title : 'Bank Name', value : data[0].bank.name},
+                    {title : 'Bank Account', value : data[0].account_number},
+                    {title : 'Bank Account Name', value : data[0].account_name},
+                ]
+                await this.setState({payment_info : payment_info})
             }
       
         } 
@@ -73,16 +94,7 @@ export default class Topup extends Base {
     async ChangeInput(value, type){
         var payment_data = this.state.payment_data
         payment_data[type] = value
-        if(type === 'bank_setting'){
-            var payment_info = [
-                {title : 'Bank Name', value : value.bank.name},
-                {title : 'Bank Account', value : value.account_number},
-                {title : 'Bank Account Name', value : value.account_name},
-            ]
-            payment_data[type] = {id : value}
-            await this.setState({payment_info : payment_info})
-        }
-        else if (type === 'amount') {
+        if (type === 'amount') {
             if (value != '') {
                 payment_data[type] = parseFloat(value.replace(/,/g, '')).toLocaleString();
             }
@@ -120,7 +132,7 @@ export default class Topup extends Base {
         else if(data.amount === 0){
             await this.alertSnackbar('Amount tidak boleh kosong')
         }
-        else if(data.bank_setting.id === ''){
+        else if(data.bank.id === ''){
             await this.alertSnackbar('Bank tidak boleh kosong')
         }
         else if(data.image.image === ''){
@@ -194,14 +206,14 @@ export default class Topup extends Base {
                                 <Text>Bank</Text>
                                     <View style={{backgroundColor : 'white', borderRadius : 4, marginTop : 4}}>
                                         <Picker
-                                            selectedValue={payment_data.bank_setting.id}
+                                            selectedValue={JSON.stringify(payment_data.bank)}
                                             onValueChange={(itemValue, itemIndex) =>
-                                                this.ChangeInput(itemValue, 'bank_setting')
+                                                this.ChangeInput(JSON.parse(itemValue), 'bank')
                                             }>
-                                            <Picker.Item label={'Pilih Bank'} value={''} />
+                                            <Picker.Item label={'Pilih Bank'} value={JSON.stringify({id : ''})} />
                                             {
                                                 bank_arr.map((data, index)=>(
-                                                <Picker.Item label={data.bank.name} value={data.id} key={index} />
+                                                <Picker.Item label={data.name} value={JSON.stringify(data)} key={index} />
                                                 ))
                                             }
                                         </Picker>

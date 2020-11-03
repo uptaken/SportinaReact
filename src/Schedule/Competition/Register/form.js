@@ -11,7 +11,9 @@ import {
     TouchableHighlight,
     FlatList,
     Keyboard,
-    AsyncStorage
+    AsyncStorage,
+    Modal,
+    Alert
 } from 'react-native';
 
 import Base from '../../../Base';
@@ -32,7 +34,7 @@ export default class FormRegister extends Base {
 	state = {
         token : '',
         optionsAxios : {
-            timeout: 30000,
+            timeout: this.axiosTimeout,
             headers: {
             'Content-Type': 'application/json',
             },
@@ -81,6 +83,7 @@ export default class FormRegister extends Base {
         is_datepicker : false,
         unit_arr : [],
         competition_id : '',
+        is_modal_loading : false,
     }
 
 	async componentDidMount() {
@@ -89,8 +92,16 @@ export default class FormRegister extends Base {
         optionsAxios.headers['Authorization'] = token
         var competition_id = this.props.route.params.competition_id
         await this.setState({token : token, optionsAxios : optionsAxios, competition_id : competition_id})
-
+        
         await this.get_competition_data()
+
+        await this.get_grade(this.props.route.params.type)
+        await this.get_grade('both')
+        
+        if(this.props.route.params.id != null){
+            await this.get_data()
+        }
+        
 
         if(this.props.route.params.type === 'coach'){
             await this.get_coach_position()
@@ -98,12 +109,6 @@ export default class FormRegister extends Base {
         else if(this.props.route.params.type === 'athlete'){
             await this.get_unit()
             await this.get_classDivision('division', '', '')
-        }
-
-        await this.get_grade()
-
-        if(this.props.route.params.id != null){
-            await this.get_data()
         }
     }
 
@@ -151,7 +156,14 @@ export default class FormRegister extends Base {
 		
 			if (response.data.status == 'success') {
                 var data = response.data.data.data
-                await this.setState({coach_position_arr : data})
+                var coach_position_arr = []
+                for(var x in data){
+                    var arr = {}
+                    arr.id = data[x].id
+                    arr.name = data[x].name
+                    coach_position_arr.push(arr)
+                }
+                await this.setState({coach_position_arr : coach_position_arr})
 			}
 
 		} catch (e) {
@@ -159,13 +171,18 @@ export default class FormRegister extends Base {
 		}
     }
 
-    async get_grade(){
+    async get_grade(type){
         try {
-			var response = await this.axios.get(this.url + '/grade-competition?competition_id=' + this.state.competition_data.id, this.state.optionsAxios);
+            console.log(this.url + '/grade-competition?competition_id=' + this.state.competition_data.id + '&type=' + type)
+			var response = await this.axios.get(this.url + '/grade-competition?competition_id=' + this.state.competition_data.id + '&type=' + type, this.state.optionsAxios);
 		
 			if (response.data.status == 'success') {
+                var grade = this.state.grade_arr
                 var data = response.data.data.data
-                await this.setState({grade_arr : data})
+                for(var x in data){
+                    grade.push(data[x])
+                }
+                await this.setState({grade_arr : grade})
 			}
 
 		} catch (e) {
@@ -211,9 +228,6 @@ export default class FormRegister extends Base {
                     }
                     await this.setState({class_arr : arr})
                 }
-                if(id === ''){
-                    await this.setState({class_arr : []})
-                }
 			}
 
 		} catch (e) {
@@ -222,22 +236,25 @@ export default class FormRegister extends Base {
     }
     
     async get_data(){
+        await this.setState({is_modal_loading : true})
         try {
             var url = this.url
-            if(this.props.route.params.registration_status === 'waiting'){
+            if(this.props.route.params.registration_type === 'waiting'){
                 url += '/team/participant?id=' + this.props.route.params.id
             }
             else{
                 url += '/' + this.props.route.params.type + '?id=' + this.props.route.params.id + '&type=no_team'
             }
+
 			var response = await this.axios.get(url, this.state.optionsAxios);
 		
 			if (response.data.status == 'success') {
                 var data = response.data.data
+                console.log(data.id)
                 if(data.unit != null){
                     data.unit = {id : data.unit.id, name : data.unit.name}
                 }
-                data.registration_status = this.props.route.params.registration_status
+                data.registration_status = this.props.route.params.registration_type
                 data.image = {
                     image : '',
                     image_display : this.no_profile_picture,
@@ -245,7 +262,7 @@ export default class FormRegister extends Base {
                     type : 'old'
                 }
                 var image_url = this.props.route.params.type
-                if(this.props.route.params.registration_status === 'waiting'){
+                if(this.props.route.params.registration_type === 'waiting'){
                     image_url = 'team-participant'
                 }
                 if(data.file_name != null){
@@ -257,16 +274,27 @@ export default class FormRegister extends Base {
                     }   
                 }
                 if(this.props.route.params.type === 'coach'){
+                    data.coach_position = {id : data.coach_position.id, name : data.coach_position.name}
                     await this.setState({coach_data : data})
                 }
                 else if(this.props.route.params.type === 'athlete'){
+                    await this.setState({class_arr : []})
                     data.division = {id : data.class.division.id, name : data.class.division.name}
+                    await this.get_classDivision('class', data.division.id, data.gender)
+
+
                     data.class = {id : data.class.id, name : data.class.name}
                     data.birth_date = this.moment(data.birth_date).format('DD MMMM YYYY')
-                    data.birth_date_val = new Date(data.birth_date)
-                    await this.get_classDivision('class', data.division.id, data.gender)
-                    await this.setState({athlete_data : data})
+                    // data.birth_date_val = new Date(data.birth_date)
+
+                    setTimeout(async () => {
+                        await this.setState({athlete_data : data})
+                    },this.loadingTimeout);
                 }
+
+                setTimeout(async () => {
+                    await this.setState({is_modal_loading : false})
+                },this.loadingTimeout);
 			}
 
 		} catch (e) {
@@ -322,14 +350,16 @@ export default class FormRegister extends Base {
             data[type] = value
             if(type === 'birth_date'){
                 data.birth_date = this.moment(value).format('DD MMMM YYYY')
-                data.birth_date_val = new Date(value)
+                // data.birth_date_val = new Date(value)
                 await this.datePickerAction()
             }
             else if(type === 'division'){
                 data[type] = {id : value}
                 await this.setState({class_arr : []})
                 data['class'] = {id : ''}
-                await this.get_classDivision('class', value, data.gender)
+                if(value !== ''){
+                    await this.get_classDivision('class', value, data.gender)
+                }
             }
             else if(type === 'gender'){
                 if(data['division'].id === ''){
@@ -360,6 +390,7 @@ export default class FormRegister extends Base {
     }
     
     async saveDataForm(){
+        await this.setState({is_modal_loading : true})
         var type = this.props.route.params.type
         var url = this.url
         var url_team_participant = '/team/participant'
@@ -418,6 +449,7 @@ export default class FormRegister extends Base {
                         await this.alertSnackbar('Berhasil')
                         await this.props.route.params.onData()
                         this.props.navigation.goBack()
+                        await this.setState({is_modal_loading : false})
                     }
                 }
                 catch (e) {
@@ -494,12 +526,33 @@ export default class FormRegister extends Base {
                         await this.alertSnackbar('Berhasil')
                         await this.props.route.params.onData()
                         this.props.navigation.goBack()
+                        await this.setState({is_modal_loading : false})
                     }
+
                 }
                 catch (e) {
                     await this.alertSnackbar(e.message)
                 }
             }
+        }
+    }
+    
+    async cancelBtn(){
+        if(this.props.route.params.id != null){
+            Alert.alert(
+                'Peringatan',
+                'To Cancel contact customer service',
+                [
+                  {
+                    text: 'OK'
+                  },
+                ],
+                {cancelable: false},
+            );
+        }
+        else{
+            await this.props.route.params.onData()
+            this.props.navigation.goBack()
         }
     }
 
@@ -513,7 +566,8 @@ export default class FormRegister extends Base {
             division_arr,
             class_arr,
             is_datepicker,
-            unit_arr
+            unit_arr,
+            is_modal_loading
         } = this.state
 		return (
             <>
@@ -564,7 +618,7 @@ export default class FormRegister extends Base {
                             </TouchableNativeFeedback>
                         </View>
                         <View style={{marginTop : 8}}>
-                            <TouchableNativeFeedback useForeground background={TouchableNativeFeedback.Ripple('#cc0000ff', false)}>
+                            <TouchableNativeFeedback useForeground background={TouchableNativeFeedback.Ripple('#cc0000ff', false)} onPress={()=>this.cancelBtn()}>
                                 <View style={{backgroundColor : '#cc0000ff', padding : 12, alignItems : 'center', borderRadius : 4}}>
                                     <Text style={{color : 'white', textTransform: 'uppercase'}}>Cancel</Text>
                                 </View>
@@ -575,6 +629,20 @@ export default class FormRegister extends Base {
                 </View>
                 
             </ScrollView>
+
+            <Modal
+                transparent={true}
+                visible={is_modal_loading}
+                animationType="fade">
+                <View style={{backgroundColor : '#000000B3', flex : 1, justifyContent : 'center'}}>
+                    <View style={{margin : 16 * 1.5, backgroundColor : 'white', radius : 4, padding : 16}}>
+                        <View>
+                            <Text style={{fontWeight : 'bold', fontSize : 16}}>Harap Tunggu...</Text>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
             </>
         );
 	}
@@ -749,7 +817,7 @@ class FormAthlete extends Base {
                             <DateTimePicker
                                 testID="dateTimePicker"
                                 timeZoneOffsetInMinutes={0}
-                                value={athlete_data.birth_date_val != '' ? athlete_data.birth_date_val : new Date()}
+                                value={athlete_data.birth_date != '' ? new Date(athlete_data.birth_date) : new Date()}
                                 mode={'date'}
                                 maximumDate={new Date()}
                                 display="spinner"
@@ -836,7 +904,7 @@ class FormAthlete extends Base {
                             onValueChange={(itemValue, itemIndex) =>
                                 ChangeInput(itemValue, 'division')
                             }>
-                            <Picker.Item label={'Pilih Posisi'} value={''} />
+                            <Picker.Item label={'Pilih Divisi'} value={''} />
                             {
                                 division_arr.map((data, index)=>(
                                 <Picker.Item label={data.name} value={data.id} key={index} />

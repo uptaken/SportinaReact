@@ -33,7 +33,7 @@ export default class SignUp extends Base {
             email : '',
         },
         optionsAxios : {
-            timeout: 30000,
+            timeout: this.axiosTimeout,
             headers: {
                 'Content-Type': 'application/json',
             },
@@ -55,14 +55,12 @@ export default class SignUp extends Base {
         try {
             var url = this.url + '/'
 
-            if(type == 'country'){
-                url += type + '/all'
-            }
-            else if(type == 'province'){
-                url += type + '?country_id=' + id
+            url += type + '/all'
+            if(type == 'province'){
+                url += '?country_id=' + id
             }
             else if(type == 'city'){
-                url += type + '?province_id=' + id
+                url += '?province_id=' + id
             }
             
             var response = await this.axios.get(url, this.state.optionsAxios);
@@ -73,10 +71,10 @@ export default class SignUp extends Base {
                     await this.setState({country_arr : data})
                 }
                 else if(type == 'province'){
-                    await this.setState({province_arr : data.data})
+                    await this.setState({province_arr : data})
                 }
                 else if(type == 'city'){
-                    await this.setState({city_arr : data.data})
+                    await this.setState({city_arr : data})
                 }
             }
         } 

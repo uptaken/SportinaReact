@@ -21,12 +21,14 @@ import {Picker} from '@react-native-community/picker';
 import Icon from 'react-native-vector-icons/MaterialIcons'
 import ImagePicker from 'react-native-image-picker';
 
+import ModalLoading from '../../Components/ModalLoading'
+
 export default class ChangeProfile extends Base {
     inputs = {}
 	state = {
         token : '',
         optionsAxios : {
-			timeout: 30000,
+			timeout: this.axiosTimeout,
 			headers: {
 				'Content-Type': 'application/json',
 			},
@@ -34,7 +36,7 @@ export default class ChangeProfile extends Base {
 		auth_data : {
 			name : '', head_coach : '', phone : '', email : '', address : '',
             country : {id : ''}, province : {id : ''},
-            city : {province : {id : ''}, id : ''},
+            city : {id : ''},
             image : {
                 image_display : '',
                 image : '',
@@ -45,6 +47,7 @@ export default class ChangeProfile extends Base {
         country_arr : [],
         province_arr : [],
         city_arr : [],
+        is_modal_loading : true,
     };
 
 	static navigationOptions = {
@@ -66,7 +69,8 @@ export default class ChangeProfile extends Base {
 			var response = await this.axios.get(this.url + '/auth/profile', this.state.optionsAxios);
 		
 			if (response.data.status == 'success') {
-				var data = response.data.data
+                var data = response.data.data
+                
                 data.image = {
                     image_display : this.no_profile_picture,
                     image : '',
@@ -74,6 +78,11 @@ export default class ChangeProfile extends Base {
                     type : 'old'
                 }
 
+                await this.get_place('province', data.city.province.country.id)
+                await this.get_place('city', data.city.province.id)
+
+                data.province = data.city.province
+                data.country = data.city.province.country
 
 				if(data.file_name != null){
                     data.image = {
@@ -86,17 +95,20 @@ export default class ChangeProfile extends Base {
                         type : 'old'
                     }
                 }
-                data.province = data.city.province
-                data.country = data.city.province.country
 
-                await this.get_place('province', data.country.id)
-                await this.get_place('city', data.province.id)
 
-				await this.setState({auth_data : data})
+                await this.setState({auth_data : data})
+                
+                setTimeout(async () => {
+                    await this.setState({is_modal_loading : false})
+                },this.loadingTimeout);
 			}
 
 		} catch (e) {
-			this.alertSnackbar(e.message)
+            this.alertSnackbar(e.message)
+            setTimeout(async () => {
+                await this.setState({is_modal_loading : false})
+            },this.loadingTimeout);
 		}
     }
     
@@ -104,14 +116,12 @@ export default class ChangeProfile extends Base {
         try {
             var url = this.url + '/'
 
-            if(type == 'country'){
-                url += type + '/all'
-            }
-            else if(type == 'province'){
-                url += type + '?country_id=' + id
+            url += type + '/all'
+            if(type == 'province'){
+                url += '?country_id=' + id
             }
             else if(type == 'city'){
-                url += type + '?province_id=' + id
+                url += '?province_id=' + id
             }
             
             var response = await this.axios.get(url, this.state.optionsAxios);
@@ -122,10 +132,10 @@ export default class ChangeProfile extends Base {
                     await this.setState({country_arr : data})
                 }
                 else if(type == 'province'){
-                    await this.setState({province_arr : data.data})
+                    await this.setState({province_arr : data})
                 }
                 else if(type == 'city'){
-                    await this.setState({city_arr : data.data})
+                    await this.setState({city_arr : data})
                 }
             }
         } 
@@ -137,20 +147,24 @@ export default class ChangeProfile extends Base {
     async ChangeInput(value, type){
         var auth_data = this.state.auth_data
 
-        auth_data[type] = value
         if(type === 'country'){
             auth_data[type] = {id : value}
-            await this.get_place('province', value)
             auth_data.province = {id : ''}
             auth_data.city = {id : ''}
+            await this.setState({province_arr : [], city_arr : []})
+            await this.get_place('province', value)
         }
         else if(type === 'province'){
             auth_data[type] = {id : value}
-            await this.get_place('city', value)
             auth_data.city = {id : ''}
+            await this.setState({city_arr : []})
+            await this.get_place('city', value)
         }
         else if(type === 'city'){
             auth_data[type] = {id : value}
+        }
+        else{
+            auth_data[type] = value
         }
         await this.setState({auth_data : auth_data})
     }
@@ -255,7 +269,8 @@ export default class ChangeProfile extends Base {
 	render() {
         const {
             auth_data,
-            country_arr, province_arr, city_arr
+            country_arr, province_arr, city_arr,
+            is_modal_loading
         } = this.state
 		return (
             <View style={{backgroundColor : Style.colors.bgBase, flex : 1}}>
@@ -394,6 +409,7 @@ export default class ChangeProfile extends Base {
                     </View>
                 </View>
 
+                <ModalLoading is_modal_loading={is_modal_loading} />
             </View>			
 		);
 	}

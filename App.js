@@ -43,6 +43,7 @@ import CompetitionDetail from './src/Schedule/Competition/detail'
 import CompetitionDetailIndex from './src/Schedule/Competition/indexDetail'
 import CompetitionHotel from './src/Schedule/Competition/Hotel'
 import CompetitionRegister from './src/Schedule/Competition/Register'
+import DivisionClassParticipant from './src/Schedule/Competition/divisionClass_Participant'
 
 import HotelFindRoom from './src/Schedule/Competition/Hotel/findRoom'
 import HotelPickRoom from './src/Schedule/Competition/Hotel/pickRoom'
@@ -335,6 +336,13 @@ function App() {
           component={CompetitionDetailIndex}
           options={titleBarStyle}
         />
+
+        <Stack.Screen
+          name="DivisionClassParticipant"
+          component={DivisionClassParticipant}
+          options={titleBarStyle}
+        />
+
         <Stack.Screen
           name="FormRegister"
           component={FormRegister}

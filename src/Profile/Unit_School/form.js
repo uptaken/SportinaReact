@@ -17,6 +17,8 @@ import Base from '../../Base';
 import Style from '../../Style/theme'
 import ProfileHead from '../../Components/HeadTitle'
 
+import ModalLoading from '../../Components/ModalLoading'
+
 import {Picker} from '@react-native-community/picker';
 import Icon from 'react-native-vector-icons/MaterialIcons'
 
@@ -24,7 +26,7 @@ export default class FormUnitSchool extends Base {
 	state = {
 		token : '',
 		optionsAxios : {
-			timeout: 30000,
+			timeout: this.axiosTimeout,
 			headers: {
 				'Content-Type': 'application/json',
 			},
@@ -32,12 +34,14 @@ export default class FormUnitSchool extends Base {
 		data_unit : {
 			id : '',
 			name : '', address : '',
-			country : {id : ''}, province : {id : ''},
-			city : {province : {id : ''}, id : ''},
+			country : {id : ''},
+			province : {id : ''},
+			city : {id : ''},
 		},
 		country_arr : [],
 		province_arr : [],
 		city_arr : [],
+		is_modal_loading : false
 	};
 
 	static navigationOptions = {
@@ -52,8 +56,13 @@ export default class FormUnitSchool extends Base {
 
 		await this.get_place('country', '')
 
-		if(this.props.route.params.id != null){
+		if(this.props.route.params.id !== ''){
+			await this.setState({is_modal_loading : true})
 			await this.get_data()
+
+			setTimeout(async () => {
+				await this.setState({is_modal_loading : false})
+			}, this.loadingTimeout);
 		}
 
 	}
@@ -64,11 +73,12 @@ export default class FormUnitSchool extends Base {
 		
 			if (response.data.status == 'success') {
 				var data = response.data.data
+
+				await this.get_place('province', data.city.province.country.id)
+				await this.get_place('city', data.city.province.id)
+
 				data.country = data.city.province.country
 				data.province = data.city.province
-
-				await this.get_place('province', data.country.id)
-				await this.get_place('city', data.province.id)
 				
 				await this.setState({data_unit : data})
 			}
@@ -82,14 +92,12 @@ export default class FormUnitSchool extends Base {
         try {
             var url = this.url + '/'
 
-            if(type == 'country'){
-                url += type + '/all'
-            }
-            else if(type == 'province'){
-                url += type + '?country_id=' + id
+			url += type + '/all'
+            if(type == 'province'){
+                url += '?country_id=' + id
             }
             else if(type == 'city'){
-                url += type + '?province_id=' + id
+                url += '?province_id=' + id
             }
             
             var response = await this.axios.get(url, this.state.optionsAxios);
@@ -100,10 +108,10 @@ export default class FormUnitSchool extends Base {
                     await this.setState({country_arr : data})
                 }
                 else if(type == 'province'){
-                    await this.setState({province_arr : data.data})
+                    await this.setState({province_arr : data})
                 }
                 else if(type == 'city'){
-                    await this.setState({city_arr : data.data})
+                    await this.setState({city_arr : data})
                 }
             }
         } 
@@ -116,20 +124,22 @@ export default class FormUnitSchool extends Base {
 		var data_unit = this.state.data_unit
 		data_unit[type] = value
 		if(type === 'country'){
-			data_unit[type] = {id : value}
-            await this.get_place('province', value)
+			data_unit['country'] = {id : value}
             data_unit.province = {id : ''}
-            data_unit.city = {id : ''}
+			data_unit.city = {id : ''}
+			await this.setState({province_arr : [], city_arr : []})
+            await this.get_place('province', value)
         }
         else if(type === 'province'){
 			data_unit[type] = {id : value}
+			data_unit.city = {id : ''}
+			await this.setState({city_arr : []})
             await this.get_place('city', value)
-            data_unit.city = {id : ''}
 		}
 		else if(type === 'city'){
 			data_unit[type] = {id : value}
-        }
-        await this.setState({data_unit : data_unit})
+		}
+		await this.setState({data_unit : data_unit})
 	}
 
 	async actionBtn(type){
@@ -185,6 +195,7 @@ export default class FormUnitSchool extends Base {
 			province_arr,
 			city_arr,
 			data_unit,
+			is_modal_loading
 		} = this.state
 		return (
             <View style={{backgroundColor : Style.colors.bgBase, height : '100%'}}>
@@ -290,6 +301,8 @@ export default class FormUnitSchool extends Base {
 					
                 </View>
 				</ScrollView>
+
+				<ModalLoading is_modal_loading={is_modal_loading} />
 
             </View>			
 		);

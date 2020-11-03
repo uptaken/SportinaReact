@@ -11,6 +11,8 @@ export default class Base extends Component {
 
 	priceFormat = 'id-ID'
 	pickerMode = 'dropdown'
+	loadingTimeout = 750
+	axiosTimeout = 3000
 	
 	axios = axios;
 	moment = moment;

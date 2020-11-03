@@ -20,11 +20,13 @@ import CompetitionDetail from './detail'
 import CompetitionHotel from './Hotel'
 import CompetitionRegister from './Register'
 
+import ModalLoading from '../../Components/ModalLoading'
+
 export default class CompetitionDetailIndex extends Base {
     state = {
       token : '',
       optionsAxios : {
-        timeout: 30000,
+        timeout: this.axiosTimeout,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -56,6 +58,7 @@ export default class CompetitionDetailIndex extends Base {
       waiting_participant_arr : [],
       is_close_regis : false,
       end_competition : false,
+      is_modal_loading : false,
     }
 
   async componentDidMount() {
@@ -66,8 +69,14 @@ export default class CompetitionDetailIndex extends Base {
     optionsAxios.headers['Authorization'] = token
     await this.setState({token : token, optionsAxios : optionsAxios, competition_id : competition_id})
 
+    await this.setState({is_modal_loading : true})
+
     await this.get_auth()
     await this.infoData()
+
+    setTimeout(async () => {
+      await this.setState({is_modal_loading : false})
+    },this.loadingTimeout);
   }
 
   async changeTab(index){
@@ -77,12 +86,17 @@ export default class CompetitionDetailIndex extends Base {
       await this.infoData()
     }
     else if(index === 2){
+      await this.setState({is_modal_loading : true})
       await this.get_priceInv()
       await this.get_survey(this.state.auth_data.id)
+      setTimeout(async () => {
+        await this.setState({is_modal_loading : false})
+      },this.loadingTimeout);
     }
   }
 
   async infoData(){
+
     await this.get_data()
     await this.get_division()
     await this.get_participant('waiting')
@@ -91,6 +105,7 @@ export default class CompetitionDetailIndex extends Base {
     await this.get_survey()
 
     await this.setDetail_info()
+
   }
 
   async get_auth(){
@@ -214,15 +229,21 @@ export default class CompetitionDetailIndex extends Base {
           for(var x in data){
             data[x].image_display = this.no_profile_picture
             data[x].status_registration = 'registered'
+            data[x].registration_type = 'registered'
 
             var uri_image = this.url_image
             
             if(type === 'waiting'){
               data[x].status_registration = 'waiting'
+              data[x].registration_type = 'waiting'
               data[x].type = data[x].type
               uri_image += '/team-participant?file_name=' + data[x].file_name + '&random=' + new Date().getTime()
             }
             else{
+              console.log(data[x])
+              if(data[x].invoice_registration.invoice_status.name === 'Unpaid'){
+                data[x].status_registration = 'waiting'
+              }
               data[x].type = type
               uri_image += '/' + type + '?file_name=' + data[x].file_name + '&random=' + new Date().getTime()
             }
@@ -311,15 +332,22 @@ export default class CompetitionDetailIndex extends Base {
       type : participant[index].type,
       registration_status : participant[index].status_registration,
       competition_id : competition.id,
+      registration_type : participant[index].registration_type,
       onData : ()=>this.onGetParticipant()
     })
   }
 
   async onGetParticipant(){
+    await this.setState({is_modal_loading : true})
+    await this.setState({participant_arr : []})
     await this.get_participant('waiting')
     await this.get_participant('coach')
     await this.get_participant('athlete')
     await this.get_priceInv()
+
+    setTimeout(async () => {
+      await this.setState({is_modal_loading : false})
+    },this.loadingTimeout);
   }
 
   async addParticipant(type){
@@ -328,6 +356,7 @@ export default class CompetitionDetailIndex extends Base {
       type : type,
       registration_status : 'waiting',
       competition_id : competition.id,
+      registration_type : 'waiting',
       onData : ()=>this.onGetParticipant()
     })
   }
@@ -401,8 +430,19 @@ export default class CompetitionDetailIndex extends Base {
     }
   }
 
+  async divisionClassDetail(indexDivision, indexClassArr, indexClass){
+    var division_regis_arr = this.state.division_regis_arr
+    var class_data = division_regis_arr[indexDivision].data_class_arr[indexClassArr][indexClass]
+    var division_data = division_regis_arr[indexDivision]
+    this.props.navigation.navigate('DivisionClassParticipant',{
+      competition_id : this.state.data_competition.id,
+      class_id : class_data.id,
+      division_id : division_data.id
+    })
+  }
+
   async modalRequestClose(){
-    await this.setState({selectedIndex : 0, is_modal_survey : false, participant_arr : []})
+    await this.setState({is_modal_survey : false})
   }
 
   render() {
@@ -421,7 +461,8 @@ export default class CompetitionDetailIndex extends Base {
       estimate_athlete,
       is_close_regis,
       division_regis_arr,
-      end_competition
+      end_competition,
+      is_modal_loading
     } = this.state
     return (
       <>
@@ -444,7 +485,8 @@ export default class CompetitionDetailIndex extends Base {
               total_data={total_data}
               survey_arr={survey_arr}
               downloadProposal={()=>this.downloadProposal()}
-              division_regis_arr={division_regis_arr} />
+              division_regis_arr={division_regis_arr}
+              divisionClassDetail={(indexDivision, indexClassArr, indexClass)=>this.divisionClassDetail(indexDivision, indexClassArr, indexClass)} />
             : selectedIndex === 2 ?
             <CompetitionRegister
               data={data_competition}
@@ -458,6 +500,8 @@ export default class CompetitionDetailIndex extends Base {
               end_competition={end_competition} />
             :<></>
           }
+
+          <ModalLoading is_modal_loading={is_modal_loading} />
 
           <Modal
             transparent={true}

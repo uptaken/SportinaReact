@@ -25,7 +25,7 @@ export default class Login extends Base {
 	state = {
 		login_data : {email : '', password : {type : 'password', is_show : false, title : 'Password', value : ''}},
 		optionsAxios : {
-            timeout: 30000,
+            timeout: this.axiosTimeout,
             headers: {
                 'Content-Type': 'application/json',
             },
