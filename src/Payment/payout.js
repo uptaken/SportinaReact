@@ -173,7 +173,7 @@ export default class RegisterPayout extends Base {
             try {
                 var data = {}
                 data.competition = {id : this.state.competition_data.id}
-                console.log(data)
+                
                 console.log(this.state.optionsAxios)
                 console.log(this.url + '/invoice/registration')
                 var response = await this.axios.post(this.url + '/invoice/registration', data, this.state.optionsAxios);

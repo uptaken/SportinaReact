@@ -13,7 +13,8 @@ import {
 	AsyncStorage,
 	BackHandler,
 	Modal,
-	Alert
+	Alert,
+	Linking
 } from 'react-native';
 
 import Base from '../Base';
@@ -70,7 +71,7 @@ export default class Schedule extends Base {
 					[
 					  {
 						text: 'OK',
-						onPress: () => BackHandler.exitApp()
+						onPress: () => this.toPlayStore()
 					  },
 					],
 					{cancelable: false},
@@ -85,6 +86,10 @@ export default class Schedule extends Base {
 		} catch (e) {
 			this.alertSnackbar(e.message)
 		}
+	}
+
+	async toPlayStore(){
+		Linking.openURL('https://play.google.com/store/apps/details?id=com.sport.ina')
 	}
 
 	async get_auth(){

@@ -37,7 +37,7 @@ export default class Topup extends Base {
         competition_data : {id : '', name : ''},
         payment_info : [],
         bank_arr : [],
-        payment_data : {bank : {id : ''}, account_number : '', amount : 0, image : {image : ''}},
+        payment_data : {bank : {id : ''}, account_number : '', amount : '', image : {image : ''}},
         is_disabled : false,
     }
 
@@ -97,9 +97,10 @@ export default class Topup extends Base {
         payment_data[type] = value
         if (type === 'amount') {
             if (value != '') {
-                payment_data[type] = parseFloat(value.replace(/,/g, '')).toLocaleString();
+                payment_data[type] = parseFloat(value.replace(/\,/g,'')).toLocaleString();
             }
         }
+        console.log(payment_data)
         await this.setState({payment_data : payment_data})
     }
 
@@ -142,12 +143,12 @@ export default class Topup extends Base {
         else{
             var dataClone = JSON.stringify(data)
             dataClone = JSON.parse(dataClone)
-            dataClone.amount = dataClone.amount.replace(/,/g, '')
+            dataClone.amount = dataClone.amount.replace(/\,/g,'')
 
             var dataPost = dataClone
             dataPost.competition = {id : this.state.competition_data.id}
             dataPost.type = 'registration'
-            console.log(JSON.stringify(dataPost))
+            
             await this.setState({is_disabled : true})
             
             try {
@@ -229,6 +230,7 @@ export default class Topup extends Base {
                                     placeholder={'Account Number'}
                                     returnKeyType={"next"}
                                     editable={true}
+                                    keyboardType={'numeric'}
                                     ref={(input) => { this.account_number = input }}
                                     onSubmitEditing={() => { this.amount.focus() }} />
                             </View>

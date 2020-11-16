@@ -1,4 +1,4 @@
-package com.sportina;
+package com.sport.ina;
 
 import com.facebook.react.ReactActivity;
 

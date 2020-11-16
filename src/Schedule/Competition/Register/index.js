@@ -42,7 +42,9 @@ export default class RegisterCompetition extends Base {
 			totalPriceRegister,
 			paymentBtn,
 			is_close_regis,
-			end_competition
+			end_competition,
+			changeSearch,
+			searchParticipantBtn
 		} = this.props
 		return (
             <View style={{flex: 1}}>
@@ -77,7 +79,7 @@ export default class RegisterCompetition extends Base {
 						}
 
 						<View style={{marginTop : 12}}>
-							<SearchCompetition ChangeInput={(value)=>this.changeInput(value)} />
+							<SearchCompetition ChangeInput={(value)=>changeSearch(value)} searchBtn={()=>searchParticipantBtn()} />
 						</View>
 					</View>
 				</View>

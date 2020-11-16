@@ -19,7 +19,7 @@ export default class SearchCompetition extends Base {
             <View style={{flexDirection : 'row'}}>
                 <TextInput 
                     style={{padding : 8, flex : 1, backgroundColor : 'white'}} 
-                    placeholder={'Search Competition'}
+                    placeholder={'Search'}
                     returnKeyType={"search"}
                     editable={true}
                     onChangeText={text => ChangeInput(text)}

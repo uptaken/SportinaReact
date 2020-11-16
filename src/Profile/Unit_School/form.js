@@ -9,7 +9,6 @@ import {
 	TouchableOpacity,
 	TouchableNativeFeedback,
 	TouchableHighlight,
-	Button,
 	AsyncStorage,
 	Picker
 } from 'react-native';
@@ -19,6 +18,7 @@ import Style from '../../Style/theme'
 import ProfileHead from '../../Components/HeadTitle'
 
 import ModalLoading from '../../Components/ModalLoading'
+import Button from '../../Components/Button'
 
 // import {Picker} from '@react-native-community/picker';
 import Icon from 'react-native-vector-icons/MaterialIcons'
@@ -190,6 +190,10 @@ export default class FormUnitSchool extends Base {
 				}
 			}
 		}
+		else if(type === 'cancel'){
+			this.props.route.params.onData()
+			this.props.navigation.goBack()
+		}
 	}
 
 
@@ -288,18 +292,10 @@ export default class FormUnitSchool extends Base {
 
 					<View style={{marginTop : 16}}>
 						<View>
-							<TouchableNativeFeedback useForeground background={TouchableNativeFeedback.Ripple('white', false)} onPress={()=>this.actionBtn('save')}>
-								<View style={{backgroundColor : Style.colors.colorPrimary, padding : 12, alignItems : 'center', borderRadius : 4}}>
-									<Text style={{color : 'white', textTransform: 'uppercase'}}>Save</Text>
-								</View>
-							</TouchableNativeFeedback>
+							<Button color={Style.colors.colorPrimary} title={'Save'} textColor={'white'} actionBtnPress={()=>this.actionBtn('save')} />
 						</View>
 						<View style={{marginTop : 8}}>
-							<TouchableNativeFeedback useForeground background={TouchableNativeFeedback.Ripple('white', false)} onPress={()=>this.actionBtn('cancel')}>
-								<View style={{backgroundColor : '#cc0000ff', padding : 12, alignItems : 'center', borderRadius : 4}}>
-									<Text style={{color : 'white', textTransform: 'uppercase'}}>Cancel</Text>
-								</View>
-							</TouchableNativeFeedback>
+							<Button color={'#cc0000ff'} title={'Cancel'} textColor={'white'} actionBtnPress={()=>this.actionBtn('cancel')} />
 						</View>
 					</View>
 					

@@ -7,7 +7,8 @@ import {
   Linking,
   Modal,
   Text,
-  TextInput
+  TextInput,
+  Keyboard
 } from 'react-native';
 
 import Button from '../../Components/Button'
@@ -59,6 +60,7 @@ export default class CompetitionDetailIndex extends Base {
       is_close_regis : false,
       end_competition : false,
       is_modal_loading : false,
+      search_register : '',
     }
 
   async componentDidMount() {
@@ -88,6 +90,9 @@ export default class CompetitionDetailIndex extends Base {
     else if(index === 2){
       await this.setState({is_modal_loading : true})
       await this.get_priceInv()
+      await this.get_participant('waiting')
+      await this.get_participant('coach')
+      await this.get_participant('athlete')
       await this.get_survey(this.state.auth_data.id)
       setTimeout(async () => {
         await this.setState({is_modal_loading : false})
@@ -99,9 +104,6 @@ export default class CompetitionDetailIndex extends Base {
 
     await this.get_data()
     await this.get_division()
-    await this.get_participant('waiting')
-    await this.get_participant('coach')
-    await this.get_participant('athlete')
     await this.get_survey()
 
     await this.setDetail_info()
@@ -143,27 +145,6 @@ export default class CompetitionDetailIndex extends Base {
           await this.setState({is_close_regis : true, end_competition : true})
         }
 
-        // var division = data.division
-        // for(var x in division){
-        //   var class_data = division[x].class
-        //   var class_arr = []
-        //   var arr = []
-        //   for(var y in class_data){
-        //     arr.push(class_data[y])
-          
-        //     if(class_data.length > 4){
-        //       if(arr.length % 4 == 0){
-        //         class_arr.push(arr)
-        //         arr = []
-        //       }
-        //     }
-        //     else{
-        //       class_arr = [class_data]
-        //     }
-        //   }
-        //   division[x].data_class_arr = class_arr
-        // }
-
         await this.setState({data_competition : data})
       }
 
@@ -176,32 +157,43 @@ export default class CompetitionDetailIndex extends Base {
     try {
       var url = this.url + '/division?id=&competition_id=' + this.state.competition_id
 
+      console.log(url)
+      console.log(this.state.optionsAxios)
+
       var response = await this.axios.get(url, this.state.optionsAxios);
 
       if (response.data.status == 'success') {
         var data = response.data.data.data
 
         var division = data
+
+        var arr = []
+        var class_arr = []
+        
         for(var x in division){
-          var class_data = division[x].class
-          var class_arr = []
-          var arr = []
-          for(var y in class_data){
-            arr.push(class_data[y])
+          var class_data_arr = division[x].class
           
-            if(class_data.length > 4){
-              if(arr.length % 4 == 0){
-                class_arr.push(arr)
-                arr = []
+            for(var y in class_data_arr){
+              arr.push(class_data_arr[y])
+              
+              if(class_data_arr.length > 4){
+                if(arr.length % 4 === 0){
+                  class_arr.push(arr)
+                  arr = []
+                }
+              }
+              else{
+                class_arr = [class_data_arr]
               }
             }
-            else{
-              class_arr = [class_data]
-            }
-          }
+  
+          // if(arr.length < 4){
+          //   class_arr.push(arr)
+          // }
+
           division[x].data_class_arr = class_arr
         }
-
+        
         await this.setState({division_regis_arr : division})
       }
 
@@ -214,11 +206,12 @@ export default class CompetitionDetailIndex extends Base {
     try {
       var url = this.url
       if(type === 'waiting'){
-        url += '/team/participant?competition_id=' + this.state.competition_id
+        url += '/team/participant?competition_id=' + this.state.competition_id + '&search=' + this.state.search_register
       }
       else{
-        url += '/' + type + '?id=&class_Id=&competition_id=' + this.state.competition_id + '&type=with_team&search='
+        url += '/' + type + '?id=&class_id=&competition_id=' + this.state.competition_id + '&type=with_team&search=' + this.state.search_register
       }
+      console.log(url)
 
       var response = await this.axios.get(url, this.state.optionsAxios);
 
@@ -309,12 +302,12 @@ export default class CompetitionDetailIndex extends Base {
       {title : 'Venue :', value : this.state.data_competition.place},
       {title : 'Close Registration :', value : this.moment(this.state.data_competition.close_registration_at).format('DD MMM YYYY')},
     ]
-
+    
     var total_data = [
-        {title : 'Team', value : this.state.data_competition.total_team},
-        {title : 'Book', value : this.state.data_competition.total_book},
-        {title : 'Athlete', value : this.state.data_competition.total_athlete},
-        {title : 'Coach', value : this.state.data_competition.total_coach},
+        {title : 'Team', value : this.state.data_competition.total_team == null ? 0 : this.state.data_competition.total_team},
+        {title : 'Book', value : this.state.data_competition.total_book == null ? 0 : this.state.data_competition.total_book},
+        {title : 'Athlete', value : this.state.data_competition.total_athlete == null ? 0 : this.state.data_competition.total_athlete},
+        {title : 'Coach', value : this.state.data_competition.total_coach == null ? 0 : this.state.data_competition.total_coach},
     ]
     await this.setState({info_data : info_data, total_data : total_data})
   }
@@ -339,8 +332,8 @@ export default class CompetitionDetailIndex extends Base {
   }
 
   async onGetParticipant(){
-    await this.setState({is_modal_loading : true})
-    await this.setState({participant_arr : []})
+    Keyboard.dismiss()
+    await this.setState({is_modal_loading : true, participant_arr : []})
     await this.get_participant('waiting')
     await this.get_participant('coach')
     await this.get_participant('athlete')
@@ -446,6 +439,22 @@ export default class CompetitionDetailIndex extends Base {
     await this.setState({is_modal_survey : false})
   }
 
+  async changeRegisterSearch(value){
+    await this.setState({search_register : value})
+  }
+  
+  async searchParticipantBtn(){
+    await this.setState({is_modal_loading : true})
+    await this.setState({participant_arr : []})
+    await this.get_participant('waiting')
+    await this.get_participant('coach')
+    await this.get_participant('athlete')
+
+    setTimeout(async () => {
+      await this.setState({is_modal_loading : false})
+    },this.loadingTimeout);
+  }
+
   render() {
     const {
       tab_arr,
@@ -463,7 +472,8 @@ export default class CompetitionDetailIndex extends Base {
       is_close_regis,
       division_regis_arr,
       end_competition,
-      is_modal_loading
+      is_modal_loading,
+      search_register
     } = this.state
     return (
       <>
@@ -498,7 +508,9 @@ export default class CompetitionDetailIndex extends Base {
               addButton={(type)=>this.addParticipant(type)}
               paymentBtn={()=>this.paymentRegister()}
               is_close_regis={is_close_regis}
-              end_competition={end_competition} />
+              end_competition={end_competition}
+              searchParticipantBtn={()=>this.searchParticipantBtn()}
+              changeSearch={(value)=>this.changeRegisterSearch(value)} />
             :<></>
           }
 
