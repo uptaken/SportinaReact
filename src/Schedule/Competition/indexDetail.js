@@ -166,33 +166,28 @@ export default class CompetitionDetailIndex extends Base {
         var data = response.data.data.data
 
         var division = data
-
-        var arr = []
-        var class_arr = []
         
         for(var x in division){
           var class_data_arr = division[x].class
           
-            for(var y in class_data_arr){
-              arr.push(class_data_arr[y])
-              
-              if(class_data_arr.length > 4){
-                if(arr.length % 4 === 0){
-                  class_arr.push(arr)
-                  arr = []
-                }
-              }
-              else{
-                class_arr = [class_data_arr]
-              }
+          var class_arr = []
+          var arr = []
+          var index = 0
+          for(var y in class_data_arr){
+            if(y % 4 == 0 && y != 0){
+              class_arr[index] = arr
+              arr = []
+              index++
             }
-  
-          // if(arr.length < 4){
-          //   class_arr.push(arr)
-          // }
 
+            if(y == class_data_arr.length - 1)
+              class_arr[index] = arr
+
+            arr.push(class_data_arr[y])
+          }
           division[x].data_class_arr = class_arr
         }
+        
         
         await this.setState({division_regis_arr : division})
       }
